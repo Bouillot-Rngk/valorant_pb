@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>BO Tracking Overlay</title>
+  <title>Combined BO Tracking Overlay</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.min.js"></script>
   <style>
+    /* Use Saira Bold for all text */
     @font-face {
       font-family: 'Saira Bold';
       src: url("static/fonts/Saira-Bold.ttf") format('truetype');
@@ -13,148 +14,222 @@
     html, body {
       margin: 0;
       padding: 0;
-      width: 600px;
-      height: 300px;
+      width: 1920px;
+      height: 1080px;
       background: transparent;
       font-family: 'Saira Bold', sans-serif;
       color: #fff;
       overflow: hidden;
-      background-color:  #222;
+      position: relative;
     }
-    .container {
+    /* ----- SCORE OVERLAY ROW (first row) ----- */
+    .score-row {
+      position: absolute;
+      top: 6px;
+      left: 0;
+      width: 1920px;
+      height: 60px;
       display: flex;
       flex-direction: row;
-      justify-content: space-between;
-      align-items: stretch;
-      width: 100%;
-      height: 100%;
+      align-items: center;
     }
-    .box {
-      flex: 1;
-      margin: 5px;
-      border: 2px solid #205ba9;
-      padding: 5px;
-      box-sizing: border-box;
-      text-align: center;
+    .col-defLogo, .col-atkLogo {
+      width: 60px;
       display: flex;
-      flex-direction: column;
       justify-content: center;
-      background-color:  #1a1a1a;    }
-    .box.finished {
-      border-color: #ed2b29;
+      align-items: center;
     }
-    .box h3 {
-      margin: 0;
-      font-size: 1.1em;
-      line-height: 1.2;
+    .col-defLogo img, .col-atkLogo img {
+      width: 55px;
+      height: 55px;
+      object-fit: contain;
     }
-    .box p {
-      margin: 3px 0;
-      font-size: 0.9em;
-      line-height: 1.2;
+    .col-defName {
+      width: 330px;
+      text-align: left;
+      text-transform: uppercase;
+      font-size: 1.8em;
+      padding-left: 10px;
+      box-sizing: border-box;
+    }
+    .col-atkName {
+      width: 330px;
+      text-align: right;
+      text-transform: uppercase;
+      font-size: 1.8em;
+      padding-right: 10px;
+      box-sizing: border-box;
+    }
+    .col-blank {
+      width: 1140px;
+    }
+    /* ----- MAP TRACKING ROW (second row) ----- */
+    .map-row {
+      position: absolute;
+      top: 70px; /* adjust as needed */
+      left: 0;
+      /* transform: translateX(-50%); */
+      width: 400px;
+      height: 30px;
+      display: flex;
+      flex-direction: row;
+      border-radius: 0 10px 10px 0;
+      overflow: hidden;
+    }
+    .map-box {
+      flex: 1;
+      border: 1px solid #1a1a1a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8em;
+      overflow: hidden;
+      padding: 2px;
+      box-sizing: border-box;
+      background-color: #1a1a1a;
+    }
+    .map-box.current {
+      border-color: white !important;
+    }
+    .map-box .logo {
+      width: 20px;
+      height: 20px;
+      object-fit: contain;
+      margin-left: 2px;
+    }
+    #rightBox {
+        border-radius: 0 11px 11px 0;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <!-- Left Box: previous map played (or current if at start) -->
-    <div class="box" id="leftBox">
-      <h3 id="leftLabel">Previous Map</h3>
-      <p id="leftMap">TBD</p>
-      <p id="leftPick">TBD</p>
-      <p id="leftScore">Score: TBD</p>
+  <!-- Score Overlay Row -->
+  <div class="score-row">
+    <div class="col-defLogo" id="defLogoContainer">
+      <img id="defLogo" src="static/images/TeamALogo.png" alt="Defense Logo">
     </div>
-    <!-- Middle Box: current map -->
-    <div class="box" id="middleBox">
-      <h3 id="middleLabel">Current Map</h3>
-      <p id="middleMap">TBD</p>
-      <p id="middlePick">TBD</p>
-      <p id="middleScore">Score: TBD</p>
+    <div class="col-defName" id="defName">DEF TEAM</div>
+    <div class="col-blank"></div>
+    <div class="col-atkName" id="atkName">ATK TEAM</div>
+    <div class="col-atkLogo" id="atkLogoContainer">
+      <img id="atkLogo" src="static/images/TeamBLogo.png" alt="Attack Logo">
     </div>
-    <!-- Right Box: next map -->
-    <div class="box" id="rightBox">
-      <h3 id="rightLabel">Next Map</h3>
-      <p id="rightMap">TBD</p>
-      <p id="rightPick">TBD</p>
-      <p id="rightScore">Score: TBD</p>
+  </div>
+  
+  <!-- Map Tracking Row -->
+  <div class="map-row">
+    <div class="map-box" id="leftBox">
+      <span class="mapName" id="leftMapName">TBD</span>
+      <img class="logo" id="leftLogo" src="static/images/TBD.png" alt="Logo">
+      <span class="score" id="leftScore"></span>
+    </div>
+    <div class="map-box" id="middleBox">
+      <span class="mapName" id="middleMapName">TBD</span>
+      <img class="logo" id="middleLogo" src="static/images/TBD.png" alt="Logo">
+      <span class="score" id="middleScore"></span>
+    </div>
+    <div class="map-box" id="rightBox">
+      <span class="mapName" id="rightMapName">TBD</span>
+      <img class="logo" id="rightLogo" src="static/images/TBD.png" alt="Logo">
+      <span class="score" id="rightScore"></span>
     </div>
   </div>
   
   <script>
     const socket = io();
     
-    function getDisplayIndices(state) {
-      let boType = state.boType;
-      let n = state.maps.length;
-      let cur = parseInt(state.currentMapIndex);
-      if (boType === 3) {
-        return [0, 1, 2];
-      } else if (boType === 5) {
-        if (cur === 0) {
-          return [0, 1, 2];
-        } else if (cur === n - 1) {
-          return [n - 3, n - 2, n - 1];
-        } else {
-          return [cur - 1, cur, cur + 1];
-        }
-      }
-      return [0, 1, 2];
-    }
-    
     socket.on('tracking_state_updated', function(state) {
-      let indices = getDisplayIndices(state);
-      let leftMap = state.maps[indices[0]] || { map: "TBD", pickedBy: "TBD", score: "TBD", status: "" };
-      let middleMap = state.maps[indices[1]] || { map: "TBD", pickedBy: "TBD", score: "TBD", status: "" };
-      let rightMap = state.maps[indices[2]] || { map: "TBD", pickedBy: "TBD", score: "TBD", status: "" };
+      // --- Score Overlay Row Updates ---
+      // Determine defense/attack based on current map's side using PB rules:
+      // For Map 1 (index 0): if side is "attack" then Team A is defense, Team B is attack;
+      // if side is "defense" then Team B is defense, Team A is attack.
+      // For Maps 2 & 3 (indices 1,2): if side is "attack" then Team B is defense, Team A is attack;
+      // if side is "defense" then Team A is defense, Team B is attack.
+      let curIndex = parseInt(state.currentMapIndex);
+      let currentMap = state.maps[curIndex] || { side: "TBD" };
+      let defTeam, atkTeam, defLogoPath, atkLogoPath;
       
-      document.getElementById('leftMap').innerText = leftMap.map;
-      document.getElementById('leftPick').innerText = leftMap.pickedBy;
-      document.getElementById('leftScore').innerText = "Score: " + leftMap.score;
-      
-      document.getElementById('middleMap').innerText = middleMap.map;
-      document.getElementById('middlePick').innerText = middleMap.pickedBy;
-      document.getElementById('middleScore').innerText = "Score: " + middleMap.score;
-      
-      document.getElementById('rightMap').innerText = rightMap.map;
-      document.getElementById('rightPick').innerText = rightMap.pickedBy;
-      document.getElementById('rightScore').innerText = "Score: " + rightMap.score;
-      
-      let cur = parseInt(state.currentMapIndex);
-      // For BO3, use the radio selection for current map.
-      if (state.boType == 3) {
-        if (cur === 0) {
-          document.getElementById('leftLabel').innerText = "Current Map";
-          document.getElementById('middleLabel').innerText = "Next Map";
-          document.getElementById('rightLabel').innerText = "Next Map";
-        } else if (cur === 2) {
-          document.getElementById('leftLabel').innerText = "Previous Map";
-          document.getElementById('middleLabel').innerText = "Previous Map";
-          document.getElementById('rightLabel').innerText = "Current Map";
+      if(curIndex === 0) {
+        if(currentMap.side.toLowerCase() === "attack") {
+          defTeam = state.teamA;
+          atkTeam = state.teamB;
+          defLogoPath = "static/images/TeamALogo.png";
+          atkLogoPath = "static/images/TeamBLogo.png";
+        } else if(currentMap.side.toLowerCase() === "defense") {
+          defTeam = state.teamB;
+          atkTeam = state.teamA;
+          defLogoPath = "static/images/TeamBLogo.png";
+          atkLogoPath = "static/images/TeamALogo.png";
         } else {
-          document.getElementById('leftLabel').innerText = "Previous Map";
-          document.getElementById('middleLabel').innerText = "Current Map";
-          document.getElementById('rightLabel').innerText = "Next Map";
+          defTeam = state.teamA;
+          atkTeam = state.teamB;
+          defLogoPath = "static/images/TeamALogo.png";
+          atkLogoPath = "static/images/TeamBLogo.png";
         }
-      } else if (state.boType == 5) {
-        if (cur === 0) {
-          document.getElementById('leftLabel').innerText = "Current Map";
-          document.getElementById('middleLabel').innerText = "Next Map";
-          document.getElementById('rightLabel').innerText = "Next Map";
-        } else if (cur === state.maps.length - 1) {
-          document.getElementById('leftLabel').innerText = "Previous Map";
-          document.getElementById('middleLabel').innerText = "Previous Map";
-          document.getElementById('rightLabel').innerText = "Current Map";
+      } else {
+        if(currentMap.side.toLowerCase() === "attack") {
+          defTeam = state.teamB;
+          atkTeam = state.teamA;
+          defLogoPath = "static/images/TeamBLogo.png";
+          atkLogoPath = "static/images/TeamALogo.png";
+        } else if(currentMap.side.toLowerCase() === "defense") {
+          defTeam = state.teamA;
+          atkTeam = state.teamB;
+          defLogoPath = "static/images/TeamALogo.png";
+          atkLogoPath = "static/images/TeamBLogo.png";
         } else {
-          document.getElementById('leftLabel').innerText = "Previous Map";
-          document.getElementById('middleLabel').innerText = "Current Map";
-          document.getElementById('rightLabel').innerText = "Next Map";
+          defTeam = state.teamB;
+          atkTeam = state.teamA;
+          defLogoPath = "static/images/TeamBLogo.png";
+          atkLogoPath = "static/images/TeamALogo.png";
         }
       }
       
-      document.getElementById('leftBox').className = "box" + (leftMap.status === "finished" ? " finished" : "");
-      document.getElementById('middleBox').className = "box" + (middleMap.status === "finished" ? " finished" : "");
-      document.getElementById('rightBox').className = "box" + (rightMap.status === "finished" ? " finished" : "");
+      document.getElementById('defName').innerText = defTeam.toUpperCase();
+      document.getElementById('atkName').innerText = atkTeam.toUpperCase();
+      document.getElementById('defLogo').src = defLogoPath;
+      document.getElementById('atkLogo').src = atkLogoPath;
+      
+      // --- Map Tracking Row Updates ---
+      // For BO3, assume maps indices 0,1,2.
+      const leftData = state.maps[0] || { map: "TBD", pickedBy: "TBD", score: "TBD" };
+      const middleData = state.maps[1] || { map: "TBD", pickedBy: "TBD", score: "TBD" };
+      const rightData = state.maps[2] || { map: "TBD", pickedBy: "TBD", score: "TBD" };
+      
+      document.getElementById('leftMapName').innerText = leftData.map;
+      document.getElementById('middleMapName').innerText = middleData.map;
+      document.getElementById('rightMapName').innerText = rightData.map;
+      
+      function getLogo(pickedBy, state) {
+        if(pickedBy === state.teamA) return "static/images/TeamALogo.png";
+        if(pickedBy === state.teamB) return "static/images/TeamBLogo.png";
+        return "static/images/TBD.png";
+      }
+      document.getElementById('leftLogo').src = getLogo(leftData.pickedBy, state);
+      document.getElementById('middleLogo').src = getLogo(middleData.pickedBy, state);
+      document.getElementById('rightLogo').src = getLogo(rightData.pickedBy, state);
+      
+      document.getElementById('leftScore').innerText = (leftData.score === "TBD") ? "" : leftData.score;
+      document.getElementById('middleScore').innerText = (middleData.score === "TBD") ? "" : middleData.score;
+      document.getElementById('rightScore').innerText = (rightData.score === "TBD") ? "" : rightData.score;
+      
+      // Highlight current map box based on state.currentMapIndex (0,1,2)
+      document.getElementById('leftBox').classList.remove('current');
+      document.getElementById('middleBox').classList.remove('current');
+      document.getElementById('rightBox').classList.remove('current');
+      if(parseInt(state.currentMapIndex) === 0) {
+        document.getElementById('leftBox').classList.add('current');
+      } else if(parseInt(state.currentMapIndex) === 1) {
+        document.getElementById('middleBox').classList.add('current');
+      } else if(parseInt(state.currentMapIndex) === 2) {
+        document.getElementById('rightBox').classList.add('current');
+      }
     });
   </script>
+  <style>
+    .map-box.current, .box.current {
+      border-color: white !important;
+    }
+  </style>
 </body>
 </html>
