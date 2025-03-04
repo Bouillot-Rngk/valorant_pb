@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Score Overlay</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.min.js"></script>
+  <style>
+    @font-face {
+      font-family: 'Saira Bold';
+      src: url("static/fonts/Saira-Bold.ttf") format('truetype');
+      font-weight: bold;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 1920px;
+      height: 155px;
+      background: transparent;
+      font-family: 'Saira Bold', sans-serif;
+      color: #000;
+      overflow: hidden;
+    }
+    .score-container {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      height: 100%;
+      width: 1920px;
+    }
+    .defLogo, .atkLogo {
+      width: 155px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .defLogo img, .atkLogo img {
+      width: 150px;
+      height: 150px;
+      object-fit: contain;
+    }
+    .defName {
+      width: 600px;
+      text-align: left;
+      text-transform: uppercase;
+      font-size: 4em;
+      padding-left: 10px;
+    }
+    .atkName {
+      width: 600px;
+      text-align: right;
+      text-transform: uppercase;
+      font-size: 4em;
+      padding-right: 10px;
+    }
+    .defScore, .atkScore {
+      width: 120px;
+      text-align: center;
+      font-size: 4em;
+    }
+    .blank {
+      width: 170px;
+    }
+  </style>
+</head>
+<body>
+  <div class="score-container">
+    <!-- Defense Column -->
+    <div class="defLogo" id="defLogoContainer">
+      <img src="static/images/TeamALogo.png" alt="Defense Logo" id="defLogo">
+    </div>
+    <div class="defName" id="defName">DEF TEAM</div>
+    <div class="defScore" id="defScore">0</div>
+    <!-- Blank Space -->
+    <div class="blank"></div>
+    <!-- Attack Column -->
+    <div class="atkScore" id="atkScore">0</div>
+    <div class="atkName" id="atkName">ATK TEAM</div>
+    <div class="atkLogo" id="atkLogoContainer">
+      <img src="static/images/TeamBLogo.png" alt="Attack Logo" id="atkLogo">
+    </div>
+  </div>
+  
+  <script>
+    const socket = io();
+    socket.on('tracking_state_updated', function(state) {
+      // Use the current map's side to determine defense vs. attack.
+      // For Map 1 (index 0): if side is "attack", then teamA is defense; if "defense", then teamB is defense.
+      // For Maps 2 & 3 (index 1 or 2): if side is "attack", then teamB is defense; if "defense", then teamA is defense.
+      let currentIndex = parseInt(state.currentMapIndex);
+      let currentMap = state.maps[currentIndex] || { side: "TBD" };
+      
+      let defenseTeam, attackTeam, defenseLogoPath, attackLogoPath, defenseScore, attackScore;
+      
+      // Assuming the logos are fixed images: "TeamALogo.png" and "TeamBLogo.png".
+      if(currentIndex === 0) {
+        if(currentMap.side.toLowerCase() === "attack") {
+          defenseTeam = state.teamA;
+          attackTeam = state.teamB;
+          defenseLogoPath = "static/images/TeamALogo.png";
+          attackLogoPath = "static/images/TeamBLogo.png";
+          defenseScore = state.seriesScoreA;
+          attackScore = state.seriesScoreB;
+        } else if(currentMap.side.toLowerCase() === "defense") {
+          defenseTeam = state.teamB;
+          attackTeam = state.teamA;
+          defenseLogoPath = "static/images/TeamBLogo.png";
+          attackLogoPath = "static/images/TeamALogo.png";
+          defenseScore = state.seriesScoreB;
+          attackScore = state.seriesScoreA;
+        } else {
+          defenseTeam = state.teamA;
+          attackTeam = state.teamB;
+          defenseLogoPath = "static/images/TeamALogo.png";
+          attackLogoPath = "static/images/TeamBLogo.png";
+          defenseScore = state.seriesScoreA;
+          attackScore = state.seriesScoreB;
+        }
+      } else {
+        if(currentMap.side.toLowerCase() === "attack") {
+          defenseTeam = state.teamB;
+          attackTeam = state.teamA;
+          defenseLogoPath = "static/images/TeamBLogo.png";
+          attackLogoPath = "static/images/TeamALogo.png";
+          defenseScore = state.seriesScoreB;
+          attackScore = state.seriesScoreA;
+        } else if(currentMap.side.toLowerCase() === "defense") {
+          defenseTeam = state.teamA;
+          attackTeam = state.teamB;
+          defenseLogoPath = "static/images/TeamALogo.png";
+          attackLogoPath = "static/images/TeamBLogo.png";
+          defenseScore = state.seriesScoreA;
+          attackScore = state.seriesScoreB;
+        } else {
+          defenseTeam = state.teamB;
+          attackTeam = state.teamA;
+          defenseLogoPath = "static/images/TeamBLogo.png";
+          attackLogoPath = "static/images/TeamALogo.png";
+          defenseScore = state.seriesScoreB;
+          attackScore = state.seriesScoreA;
+        }
+      }
+      
+      // Update the overlay elements:
+      document.getElementById('defName').innerText = defenseTeam.toUpperCase();
+      document.getElementById('atkName').innerText = attackTeam.toUpperCase();
+      document.getElementById('defScore').innerText = defenseScore;
+      document.getElementById('atkScore').innerText = attackScore;
+      document.getElementById('defLogo').src = defenseLogoPath;
+      document.getElementById('atkLogo').src = attackLogoPath;
+    });
+  </script>
+</body>
+</html>

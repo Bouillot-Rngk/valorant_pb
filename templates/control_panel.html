@@ -6,17 +6,12 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.min.js"></script>
   <style>
     @font-face {
-      font-family: 'Rajdhani';
-      src: url("static/fonts/Rajdhani/Rajdhani-Bold.ttf") format('truetype');
+      font-family: 'Saira Bold';
+      src: url("static/fonts/Saira-Bold.ttf") format('truetype');
       font-weight: bold;
     }
-    @font-face {
-      font-family: 'Rajdhani';
-      src: url("static/fonts/Rajdhani/Rajdhani-Regular.ttf") format('truetype');
-      font-weight: normal;
-    }
     body {
-      font-family: 'Rajdhani', sans-serif;
+      font-family: 'Saira Bold', sans-serif;
       background-color: #222;
       color: #fff;
       text-align: center;
@@ -29,7 +24,7 @@
       padding: 20px;
       border-radius: 8px;
     }
-    input[type="text"] {
+    input[type="text"], input[type="number"] {
       padding: 5px;
       font-size: 1em;
       border-radius: 4px;
@@ -53,6 +48,7 @@
       border: none;
       border-radius: 4px;
       cursor: pointer;
+      margin: 5px;
     }
     button:hover {
       background: #7aa00e;
@@ -72,16 +68,42 @@
     <div class="options" id="options"></div>
     <button onclick="submitAction()">Submit Action</button>
   </div>
+  <!-- New BO Tracking section -->
   <div class="section">
-    <button onclick="resetBO()">Reset BO</button>
+    <h2>BO Tracking</h2>
+    <label for="boType">BO Type:</label>
+    <select id="boType">
+      <option value="3" selected>BO3</option>
+      <option value="5">BO5</option>
+    </select>
+    <br>
+    <label for="currentMapIndex">Current Map:</label>
+    <label><input type="radio" name="currentMap" value="0"> Map 1</label>
+    <label><input type="radio" name="currentMap" value="1" checked> Map 2</label>
+    <label><input type="radio" name="currentMap" value="2"> Map 3</label>
+    <br>
+    <label id="score1Label" for="score1">Map 1 Score:</label>
+    <input type="text" id="score1" placeholder="e.g., 13-8">
+    <br>
+    <label id="score2Label" for="score2">Map 2 Score:</label>
+    <input type="text" id="score2" placeholder="e.g., 8-13">
+    <br>
+    <label id="score3Label" for="score3">Map 3 Score:</label>
+    <input type="text" id="score3" placeholder="e.g., 13-10">
+    <br>
+    <label id="seriesScoreALabel" for="seriesScoreA">TeamA Series Score:</label>
+    <input type="number" id="seriesScoreA" value="0" min="0">
+    <br>
+    <label id="seriesScoreBLabel" for="seriesScoreB">TeamB Series Score:</label>
+    <input type="number" id="seriesScoreB" value="0" min="0">
+    <br>
+    <button onclick="submitTracking()">Update BO Tracking</button>
   </div>
   
-  <script>
-    function resetBO() {
-      socket.emit('reset_state');
-    }
-  </script>
-  
+  <div class="section">
+    <button onclick="resetState()">Reset BO Pick/Ban</button>
+    <button onclick="resetTracking()">Reset BO Tracking</button>
+  </div>
   
   <script>
     const socket = io();
@@ -92,6 +114,29 @@
       state = newState;
       currentStep = state.step;
       updateInstruction();
+      // Update score labels if maps are picked:
+      if(state.map1.map !== "TBD"){
+        document.getElementById('score1Label').innerText = state.map1.map + " Score:";
+      } else {
+        document.getElementById('score1Label').innerText = "Map 1 Score:";
+      }
+      if(state.map2.map !== "TBD"){
+        document.getElementById('score2Label').innerText = state.map2.map + " Score:";
+      } else {
+        document.getElementById('score2Label').innerText = "Map 2 Score:";
+      }
+      if(state.map3.map !== "TBD"){
+        document.getElementById('score3Label').innerText = state.map3.map + " Score:";
+      } else {
+        document.getElementById('score3Label').innerText = "Map 3 Score:";
+      }
+      // Update series score labels with team names:
+      if(state.teamA && state.teamA !== "Team A"){
+        document.getElementById('seriesScoreALabel').innerText = state.teamA + " Series Score:";
+      }
+      if(state.teamB && state.teamB !== "Team B"){
+        document.getElementById('seriesScoreBLabel').innerText = state.teamB + " Series Score:";
+      }
     });
     
     function updateTeams() {
@@ -106,7 +151,6 @@
       optionsDiv.innerHTML = "";
       let text = "";
       
-      // For steps where we combine a pick and side selection, we treat two steps as one action.
       if (currentStep === 0) {
         text = state.teamA + " ban a map:";
         createRadioOptions(state.available_maps, "map");
@@ -160,6 +204,34 @@
         data.side = selected ? selected.value : "TBD";
       }
       socket.emit('update_action', data);
+    }
+    
+    function resetState() {
+      socket.emit('reset_state');
+    }
+    
+    function submitTracking() {
+      const boType = document.getElementById('boType').value;
+      const currentMapIndex = document.querySelector('input[name="currentMap"]:checked').value;
+      const score1 = document.getElementById('score1').value || "TBD";
+      const score2 = document.getElementById('score2').value || "TBD";
+      const score3 = document.getElementById('score3').value || "TBD";
+      const seriesScoreA = document.getElementById('seriesScoreA').value || "0";
+      const seriesScoreB = document.getElementById('seriesScoreB').value || "0";
+      
+      socket.emit('update_bo_tracking', {
+        boType: boType,
+        currentMapIndex: currentMapIndex,
+        score1: score1,
+        score2: score2,
+        score3: score3,
+        seriesScoreA: seriesScoreA,
+        seriesScoreB: seriesScoreB
+      });
+    }
+    
+    function resetTracking() {
+      socket.emit('reset_bo_tracking');
     }
   </script>
 </body>
