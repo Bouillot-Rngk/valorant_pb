@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>BO3 Full Screen Overlay</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.min.js"></script>
+  <style>
+    @font-face {
+      font-family: 'Saira Bold';
+      src: url("static/fonts/Saira-Bold.ttf") format('truetype');
+      font-weight: bold;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 1920px;
+      height: 300px;
+      background: transparent;
+      font-family: 'Saira Bold', sans-serif;
+      color: #fff;
+      overflow: hidden;
+    }
+    .container {
+      display: flex;
+      flex-direction: row;
+      justify-content: center; /* center boxes horizontally */
+      align-items: center;
+      width: 1920px;
+      height: 300px;
+    }
+    .box {
+      position: relative;
+      flex: 1;
+      margin: 5px;
+      height: 220px;
+      border: 4px solid #8cba11;
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+    .image-container {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      z-index: 1;
+    }
+    .image-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    /* Top overlay: solid background, always on top */
+    .top-info {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 40px;
+      background-color: #1a1a1a;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1em;
+      text-align: center;
+      padding-top: 2px;
+      box-sizing: border-box;
+      line-height: 1.15;
+    }
+    /* Bottom overlay: semi-transparent, aligned and centered */
+    .bottom-info {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 40px;
+      background-color: rgba(0, 0, 0, 0.6);
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2em;
+      text-align: center;
+      padding: 0 5px;
+      box-sizing: border-box;
+    }
+    /* Remove bottom overlay for banned boxes (Boxes 1, 2, and 5) */
+    #box1 .bottom-info,
+    #box2 .bottom-info,
+    #box5 .bottom-info {
+      display: none;
+    }
+    /* Apply grayscale filter to banned boxes (Boxes 1, 2, and 5) */
+    #box1 .image-container img, 
+    #box2 .image-container img, 
+    #box5 .image-container img {
+      filter: grayscale(100%);
+    }
+
+    /* For banned boxes (Boxes 1, 2, and 5) */
+    #box1, #box2, #box5 {
+      border: 4px solid #ed2b29;
+    }
+
+    /* For pick boxes (Boxes 3, 4, and 6) */
+    #box3, #box4, #box6 {
+      border: 4px solid #205ba9;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Box 1: BAN 1 -->
+    <div class="box" id="box1">
+      <div class="top-info" id="ban1Top">BAN 1<br>TBD</div>
+      <div class="image-container">
+        <img id="ban1Img" src="static/images/TBD.png" alt="Ban 1 Image">
+      </div>
+      <div class="bottom-info" id="ban1Bottom"></div>
+    </div>
+    <!-- Box 2: BAN 2 -->
+    <div class="box" id="box2">
+      <div class="top-info" id="ban2Top">BAN 2<br>TBD</div>
+      <div class="image-container">
+        <img id="ban2Img" src="static/images/TBD.png" alt="Ban 2 Image">
+      </div>
+      <div class="bottom-info" id="ban2Bottom"></div>
+    </div>
+    <!-- Box 3: MAP 1 (Pick 1) -->
+    <div class="box" id="box3">
+      <div class="top-info" id="map1Top">MAP 1<br>TBD</div>
+      <div class="image-container">
+        <img id="map1Img" src="static/images/TBD.png" alt="Map 1 Image">
+      </div>
+      <div class="bottom-info" id="map1Bottom">TBD</div>
+    </div>
+    <!-- Box 4: MAP 2 (Pick 2) -->
+    <div class="box" id="box4">
+      <div class="top-info" id="map2Top">MAP 2<br>TBD</div>
+      <div class="image-container">
+        <img id="map2Img" src="static/images/TBD.png" alt="Map 2 Image">
+      </div>
+      <div class="bottom-info" id="map2Bottom">TBD</div>
+    </div>
+    <!-- Box 5: BAN 3 -->
+    <div class="box" id="box5">
+      <div class="top-info" id="ban3Top">BAN 3<br>TBD</div>
+      <div class="image-container">
+        <img id="ban3Img" src="static/images/TBD.png" alt="Ban 3 Image">
+      </div>
+      <div class="bottom-info" id="ban3Bottom"></div>
+    </div>
+    <!-- Box 6: MAP 3 (Pick 3) -->
+    <div class="box" id="box6">
+      <div class="top-info" id="map3Top">MAP 3<br>TBD</div>
+      <div class="image-container">
+        <img id="map3Img" src="static/images/TBD.png" alt="Map 3 Image">
+      </div>
+      <div class="bottom-info" id="map3Bottom">TBD</div>
+    </div>
+  </div>
+  
+  <script>
+    // Helper to abbreviate side names
+    function abbreviateSide(side) {
+      if (!side) return side;
+      if(side.toLowerCase() === "attack") return "ATK";
+      if(side.toLowerCase() === "defense") return "DEF";
+      return side;
+    }
+    
+    const socket = io();
+    socket.on('state_updated', function(state) {
+      // Update banned boxes.
+      // Box 1:
+      if (state.bans && state.bans.length > 0) {
+        document.getElementById('ban1Top').innerHTML = "BAN 1<br>" + state.bans[0].team + " : " + state.bans[0].map;
+        document.getElementById('ban1Img').src = "static/images/" + state.bans[0].map + ".png";
+      } else {
+        document.getElementById('ban1Top').innerHTML = "BAN 1<br>TBD";
+        document.getElementById('ban1Img').src = "static/images/TBD.png";
+      }
+      // Box 2:
+      if (state.bans && state.bans.length > 1) {
+        document.getElementById('ban2Top').innerHTML = "BAN 2<br>" + state.bans[1].team + " : " + state.bans[1].map;
+        document.getElementById('ban2Img').src = "static/images/" + state.bans[1].map + ".png";
+      } else {
+        document.getElementById('ban2Top').innerHTML = "BAN 2<br>TBD";
+        document.getElementById('ban2Img').src = "static/images/TBD.png";
+      }
+      // Box 5:
+      if (state.bans && state.bans.length > 2) {
+        document.getElementById('ban3Top').innerHTML = "BAN 3<br>" + state.bans[2].team + " : " + state.bans[2].map;
+        document.getElementById('ban3Img').src = "static/images/" + state.bans[2].map + ".png";
+      } else {
+        document.getElementById('ban3Top').innerHTML = "BAN 3<br>TBD";
+        document.getElementById('ban3Img').src = "static/images/TBD.png";
+      }
+      
+      // Update pick boxes.
+      // Box 3: MAP 1 → Top: "MAP 1<br>Team A : [Map]", Bottom: "Team B : [Side]"
+      document.getElementById('map1Top').innerHTML = "MAP 1<br>" + state.map1.map_picked_by + " : " + state.map1.map;
+      document.getElementById('map1Bottom').innerHTML = state.map1.side_picked_by + " : " + abbreviateSide(state.map1.side);
+      document.getElementById('map1Img').src = (state.map1.map !== "TBD") ?
+         "static/images/" + state.map1.map + ".png" : "static/images/TBD.png";
+      
+      // Box 4: MAP 2 → Top: "MAP 2<br>Team B : [Map]", Bottom: "Team A : [Side]"
+      document.getElementById('map2Top').innerHTML = "MAP 2<br>" + state.map2.map_picked_by + " : " + state.map2.map;
+      document.getElementById('map2Bottom').innerHTML = state.map2.side_picked_by + " : " + abbreviateSide(state.map2.side);
+      document.getElementById('map2Img').src = (state.map2.map !== "TBD") ?
+         "static/images/" + state.map2.map + ".png" : "static/images/TBD.png";
+      
+      // Box 6: MAP 3 → Top: "MAP 3<br>Team B : [Map]", Bottom: "Team A : [Side]"
+      document.getElementById('map3Top').innerHTML = "MAP 3<br>" + state.map3.map_picked_by + " : " + state.map3.map;
+      document.getElementById('map3Bottom').innerHTML = state.map3.side_picked_by + " : " + abbreviateSide(state.map3.side);
+      document.getElementById('map3Img').src = (state.map3.map !== "TBD") ?
+         "static/images/" + state.map3.map + ".png" : "static/images/TBD.png";
+    });
+  </script>
+  </body>
+</html>
