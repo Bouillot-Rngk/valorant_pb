@@ -22,7 +22,7 @@
       overflow: hidden;
       position: relative;
     }
-    /* ----- SCORE OVERLAY ROW (first row) ----- */
+    /* ---------- Row 1: Score Overlay Row ---------- */
     .score-row {
       position: absolute;
       top: 6px;
@@ -63,18 +63,70 @@
     .col-blank {
       width: 1140px;
     }
-    /* ----- MAP TRACKING ROW (second row) ----- */
+    /* ---------- Row 2: Series Score Row ---------- */
+    .series-row {
+      position: absolute;
+      top: 66px; /* 6px + 60px + 6px gap */
+      left: 0;
+      width: 1920px;
+      height: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 10px;
+      box-sizing: border-box;
+    }
+    /* Defense series container on left */
+    .def-series {
+      width: 120px;
+      height: 10px;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 5px;
+    }
+    /* Attack series container on right */
+    .atk-series {
+      width: 120px;
+      height: 50px;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 5px;
+    }
+    /* The rectangle blocks */
+    .rect {
+      width: 60px;
+      height: 10px;
+    }
+    .rect.scored {
+      background-color: #ffffff;
+    }
+    .rect.unscored {
+      background-color: #1a1a1a;
+    }
+    
+    .def-series .rect {
+        border-radius: 8px 0 8px 0;
+    }
+    .atk-series .rect {
+        border-radius: 0 8px 0 8px;
+    }
+
+    /* ---------- Row 3: Map Tracking Row ---------- */
     .map-row {
       position: absolute;
-      top: 70px; /* adjust as needed */
+      top: 78px; /* 72px + 60px + 6px gap = 138px */
       left: 0;
-      /* transform: translateX(-50%); */
       width: 400px;
       height: 30px;
       display: flex;
       flex-direction: row;
       border-radius: 0 10px 10px 0;
       overflow: hidden;
+      background-color: #1a1a1a;
     }
     .map-box {
       flex: 1;
@@ -97,139 +149,185 @@
       object-fit: contain;
       margin-left: 2px;
     }
-    #rightBox {
-        border-radius: 0 11px 11px 0;
+
+    #rightBox{
+        border-radius: 0 10px 10px 0;
     }
   </style>
 </head>
 <body>
-  <!-- Score Overlay Row -->
-  <div class="score-row">
-    <div class="col-defLogo" id="defLogoContainer">
-      <img id="defLogo" src="static/images/TeamALogo.png" alt="Defense Logo">
+    <!-- Row 1: Score Overlay Row -->
+    <div class="score-row">
+      <div class="col-defLogo" id="defLogoContainer">
+        <img id="defLogo" src="static/images/TeamALogo.png" alt="Defense Logo">
+      </div>
+      <div class="col-defName" id="defName">DEF TEAM</div>
+      <div class="col-blank"></div>
+      <div class="col-atkName" id="atkName">ATK TEAM</div>
+      <div class="col-atkLogo" id="atkLogoContainer">
+        <img id="atkLogo" src="static/images/TeamBLogo.png" alt="Attack Logo">
+      </div>
     </div>
-    <div class="col-defName" id="defName">DEF TEAM</div>
-    <div class="col-blank"></div>
-    <div class="col-atkName" id="atkName">ATK TEAM</div>
-    <div class="col-atkLogo" id="atkLogoContainer">
-      <img id="atkLogo" src="static/images/TeamBLogo.png" alt="Attack Logo">
-    </div>
-  </div>
-  
-  <!-- Map Tracking Row -->
-  <div class="map-row">
-    <div class="map-box" id="leftBox">
-      <span class="mapName" id="leftMapName">TBD</span>
-      <img class="logo" id="leftLogo" src="static/images/TBD.png" alt="Logo">
-      <span class="score" id="leftScore"></span>
-    </div>
-    <div class="map-box" id="middleBox">
-      <span class="mapName" id="middleMapName">TBD</span>
-      <img class="logo" id="middleLogo" src="static/images/TBD.png" alt="Logo">
-      <span class="score" id="middleScore"></span>
-    </div>
-    <div class="map-box" id="rightBox">
-      <span class="mapName" id="rightMapName">TBD</span>
-      <img class="logo" id="rightLogo" src="static/images/TBD.png" alt="Logo">
-      <span class="score" id="rightScore"></span>
-    </div>
-  </div>
-  
-  <script>
-    const socket = io();
     
-    socket.on('tracking_state_updated', function(state) {
-      // --- Score Overlay Row Updates ---
-      // Determine defense/attack based on current map's side using PB rules:
-      // For Map 1 (index 0): if side is "attack" then Team A is defense, Team B is attack;
-      // if side is "defense" then Team B is defense, Team A is attack.
-      // For Maps 2 & 3 (indices 1,2): if side is "attack" then Team B is defense, Team A is attack;
-      // if side is "defense" then Team A is defense, Team B is attack.
-      let curIndex = parseInt(state.currentMapIndex);
-      let currentMap = state.maps[curIndex] || { side: "TBD" };
-      let defTeam, atkTeam, defLogoPath, atkLogoPath;
+    <!-- Row 2: Series Score Row -->
+    <div class="series-row">
+      <div class="def-series" id="defSeries">
+        <div class="rect unscored" id="defRect1"></div>
+        <div class="rect unscored" id="defRect2"></div>
+      </div>
+      <div class="atk-series" id="atkSeries">
+        <div class="rect unscored" id="atkRect1"></div>
+        <div class="rect unscored" id="atkRect2"></div>
+      </div>
+    </div>
+    
+    <!-- Row 3: Map Tracking Row -->
+    <div class="map-row">
+      <div class="map-box" id="leftBox">
+        <span class="mapName" id="leftMapName">TBD</span>
+        <img class="logo" id="leftLogo" src="static/images/TBD.png" alt="Logo">
+        <span class="score" id="leftScore"></span>
+      </div>
+      <div class="map-box" id="middleBox">
+        <span class="mapName" id="middleMapName">TBD</span>
+        <img class="logo" id="middleLogo" src="static/images/TBD.png" alt="Logo">
+        <span class="score" id="middleScore"></span>
+      </div>
+      <div class="map-box" id="rightBox">
+        <span class="mapName" id="rightMapName">TBD</span>
+        <img class="logo" id="rightLogo" src="static/images/TBD.png" alt="Logo">
+        <span class="score" id="rightScore"></span>
+      </div>
+    </div>
+    
+    <script>
+      const socket = io();
       
-      if(curIndex === 0) {
-        if(currentMap.side.toLowerCase() === "attack") {
-          defTeam = state.teamA;
-          atkTeam = state.teamB;
-          defLogoPath = "static/images/TeamALogo.png";
-          atkLogoPath = "static/images/TeamBLogo.png";
-        } else if(currentMap.side.toLowerCase() === "defense") {
-          defTeam = state.teamB;
-          atkTeam = state.teamA;
-          defLogoPath = "static/images/TeamBLogo.png";
-          atkLogoPath = "static/images/TeamALogo.png";
+      socket.on('tracking_state_updated', function(state) {
+        // --- ROW 1: Score Overlay Row ---
+        let curIndex = parseInt(state.currentMapIndex);
+        let currentMap = state.maps[curIndex] || { side: "TBD" };
+        let defTeam, atkTeam, defLogoPath, atkLogoPath, defSeriesScore, atkSeriesScore;
+        
+        // PB rules for BO3:
+        if(curIndex === 0) {
+          if(currentMap.side.toLowerCase() === "attack") {
+            defTeam = state.teamA;
+            atkTeam = state.teamB;
+            defLogoPath = "static/images/TeamALogo.png";
+            atkLogoPath = "static/images/TeamBLogo.png";
+            defSeriesScore = state.seriesScoreA;
+            atkSeriesScore = state.seriesScoreB;
+          } else if(currentMap.side.toLowerCase() === "defense") {
+            defTeam = state.teamB;
+            atkTeam = state.teamA;
+            defLogoPath = "static/images/TeamBLogo.png";
+            atkLogoPath = "static/images/TeamALogo.png";
+            defSeriesScore = state.seriesScoreB;
+            atkSeriesScore = state.seriesScoreA;
+          } else {
+            defTeam = state.teamA;
+            atkTeam = state.teamB;
+            defLogoPath = "static/images/TeamALogo.png";
+            atkLogoPath = "static/images/TeamBLogo.png";
+            defSeriesScore = state.seriesScoreA;
+            atkSeriesScore = state.seriesScoreB;
+          }
         } else {
-          defTeam = state.teamA;
-          atkTeam = state.teamB;
-          defLogoPath = "static/images/TeamALogo.png";
-          atkLogoPath = "static/images/TeamBLogo.png";
+          if(currentMap.side.toLowerCase() === "attack") {
+            defTeam = state.teamB;
+            atkTeam = state.teamA;
+            defLogoPath = "static/images/TeamBLogo.png";
+            atkLogoPath = "static/images/TeamALogo.png";
+            defSeriesScore = state.seriesScoreB;
+            atkSeriesScore = state.seriesScoreA;
+          } else if(currentMap.side.toLowerCase() === "defense") {
+            defTeam = state.teamA;
+            atkTeam = state.teamB;
+            defLogoPath = "static/images/TeamALogo.png";
+            atkLogoPath = "static/images/TeamBLogo.png";
+            defSeriesScore = state.seriesScoreA;
+            atkSeriesScore = state.seriesScoreB;
+          } else {
+            defTeam = state.teamB;
+            atkTeam = state.teamA;
+            defLogoPath = "static/images/TeamBLogo.png";
+            atkLogoPath = "static/images/TeamALogo.png";
+            defSeriesScore = state.seriesScoreB;
+            atkSeriesScore = state.seriesScoreA;
+          }
         }
-      } else {
-        if(currentMap.side.toLowerCase() === "attack") {
-          defTeam = state.teamB;
-          atkTeam = state.teamA;
-          defLogoPath = "static/images/TeamBLogo.png";
-          atkLogoPath = "static/images/TeamALogo.png";
-        } else if(currentMap.side.toLowerCase() === "defense") {
-          defTeam = state.teamA;
-          atkTeam = state.teamB;
-          defLogoPath = "static/images/TeamALogo.png";
-          atkLogoPath = "static/images/TeamBLogo.png";
-        } else {
-          defTeam = state.teamB;
-          atkTeam = state.teamA;
-          defLogoPath = "static/images/TeamBLogo.png";
-          atkLogoPath = "static/images/TeamALogo.png";
+        
+        document.getElementById('defName').innerText = defTeam.toUpperCase();
+        document.getElementById('atkName').innerText = atkTeam.toUpperCase();
+        document.getElementById('defLogo').src = defLogoPath;
+        document.getElementById('atkLogo').src = atkLogoPath;
+        
+        // --- ROW 2: Series Score Row ---
+        function updateScoreRectangles(container, score, isDefense) {
+          const rects = container.querySelectorAll('.rect');
+          // Remove any existing classes.
+          rects.forEach(rect => {
+            rect.classList.remove('scored', 'unscored');
+          });
+          let s = parseInt(score);
+          if(isNaN(s)) s = 0;
+          if(s === 0) {
+            rects[0].classList.add('unscored');
+            rects[1].classList.add('unscored');
+          } else if(s === 1) {
+            if(isDefense) {
+              rects[0].classList.add('scored');
+              rects[1].classList.add('unscored');
+            } else {
+              rects[0].classList.add('unscored');
+              rects[1].classList.add('scored');
+            }
+          } else if(s === 2) {
+            rects[0].classList.add('scored');
+            rects[1].classList.add('scored');
+          }
         }
-      }
-      
-      document.getElementById('defName').innerText = defTeam.toUpperCase();
-      document.getElementById('atkName').innerText = atkTeam.toUpperCase();
-      document.getElementById('defLogo').src = defLogoPath;
-      document.getElementById('atkLogo').src = atkLogoPath;
-      
-      // --- Map Tracking Row Updates ---
-      // For BO3, assume maps indices 0,1,2.
-      const leftData = state.maps[0] || { map: "TBD", pickedBy: "TBD", score: "TBD" };
-      const middleData = state.maps[1] || { map: "TBD", pickedBy: "TBD", score: "TBD" };
-      const rightData = state.maps[2] || { map: "TBD", pickedBy: "TBD", score: "TBD" };
-      
-      document.getElementById('leftMapName').innerText = leftData.map;
-      document.getElementById('middleMapName').innerText = middleData.map;
-      document.getElementById('rightMapName').innerText = rightData.map;
-      
-      function getLogo(pickedBy, state) {
-        if(pickedBy === state.teamA) return "static/images/TeamALogo.png";
-        if(pickedBy === state.teamB) return "static/images/TeamBLogo.png";
-        return "static/images/TBD.png";
-      }
-      document.getElementById('leftLogo').src = getLogo(leftData.pickedBy, state);
-      document.getElementById('middleLogo').src = getLogo(middleData.pickedBy, state);
-      document.getElementById('rightLogo').src = getLogo(rightData.pickedBy, state);
-      
-      document.getElementById('leftScore').innerText = (leftData.score === "TBD") ? "" : leftData.score;
-      document.getElementById('middleScore').innerText = (middleData.score === "TBD") ? "" : middleData.score;
-      document.getElementById('rightScore').innerText = (rightData.score === "TBD") ? "" : rightData.score;
-      
-      // Highlight current map box based on state.currentMapIndex (0,1,2)
-      document.getElementById('leftBox').classList.remove('current');
-      document.getElementById('middleBox').classList.remove('current');
-      document.getElementById('rightBox').classList.remove('current');
-      if(parseInt(state.currentMapIndex) === 0) {
-        document.getElementById('leftBox').classList.add('current');
-      } else if(parseInt(state.currentMapIndex) === 1) {
-        document.getElementById('middleBox').classList.add('current');
-      } else if(parseInt(state.currentMapIndex) === 2) {
-        document.getElementById('rightBox').classList.add('current');
-      }
-    });
-  </script>
-  <style>
-    .map-box.current, .box.current {
-      border-color: white !important;
-    }
-  </style>
-</body>
-</html>
+        const defContainer = document.getElementById('defSeries');
+        const atkContainer = document.getElementById('atkSeries');
+        updateScoreRectangles(defContainer, defSeriesScore, true);
+        updateScoreRectangles(atkContainer, atkSeriesScore, false);
+        
+        // --- ROW 3: Map Tracking Row ---
+        const leftData = state.maps[0] || { map: "TBD", pickedBy: "TBD", score: "TBD" };
+        const middleData = state.maps[1] || { map: "TBD", pickedBy: "TBD", score: "TBD" };
+        const rightData = state.maps[2] || { map: "TBD", pickedBy: "TBD", score: "TBD" };
+        
+        document.getElementById('leftMapName').innerText = leftData.map;
+        document.getElementById('middleMapName').innerText = middleData.map;
+        document.getElementById('rightMapName').innerText = rightData.map;
+        
+        function getLogo(pickedBy, state) {
+          if(pickedBy === state.teamA) return "static/images/TeamALogo.png";
+          if(pickedBy === state.teamB) return "static/images/TeamBLogo.png";
+          return "static/images/TBD.png";
+        }
+        document.getElementById('leftLogo').src = getLogo(leftData.pickedBy, state);
+        document.getElementById('middleLogo').src = getLogo(middleData.pickedBy, state);
+        document.getElementById('rightLogo').src = getLogo(rightData.pickedBy, state);
+        
+        document.getElementById('leftScore').innerText = (leftData.score === "TBD") ? "" : leftData.score;
+        document.getElementById('middleScore').innerText = (middleData.score === "TBD") ? "" : middleData.score;
+        document.getElementById('rightScore').innerText = (rightData.score === "TBD") ? "" : rightData.score;
+        
+        // Highlight current map box.
+        document.getElementById('leftBox').classList.remove('current');
+        document.getElementById('middleBox').classList.remove('current');
+        document.getElementById('rightBox').classList.remove('current');
+        if(parseInt(state.currentMapIndex) === 0) {
+          document.getElementById('leftBox').classList.add('current');
+        } else if(parseInt(state.currentMapIndex) === 1) {
+          document.getElementById('middleBox').classList.add('current');
+        } else if(parseInt(state.currentMapIndex) === 2) {
+          document.getElementById('rightBox').classList.add('current');
+        }
+      });
+    </script>
+  </body>
+  </html>
+  
