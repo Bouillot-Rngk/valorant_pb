@@ -118,15 +118,15 @@
     /* ---------- Row 3: Map Tracking Row ---------- */
     .map-row {
       position: absolute;
-      top: 78px; /* 72px + 60px + 6px gap = 138px */
-      left: 0;
-      width: 400px;
+      top: 0; /* 72px + 60px + 6px gap = 138px */
+      left: 50%;
+      transform: translateX(-50%);
+      width: 350px;
       height: 30px;
       display: flex;
       flex-direction: row;
-      border-radius: 0 10px 10px 0;
+      border-radius: 10px 10px 10px 10px;
       overflow: hidden;
-      background-color: #1a1a1a;
     }
     .map-box {
       flex: 1;
@@ -134,25 +134,35 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.8em;
+      font-size: 0.6em;
       overflow: hidden;
       padding: 2px;
       box-sizing: border-box;
-      background-color: #1a1a1a;
+      background-color: rgba(26, 26, 26, 0.6);
+    }
+    .score {
+        font-size: 1.2em;
     }
     .map-box.current {
       border-color: white !important;
+      font-size: 0.8em;
     }
     .map-box .logo {
       width: 20px;
       height: 20px;
       object-fit: contain;
-      margin-left: 2px;
+      margin-left: 8px;
+      margin-right: 8px;
     }
 
     #rightBox{
-        border-radius: 0 10px 10px 0;
+        border-radius: 0 12px 12px 0;
     }
+    #leftBox{
+        border-radius: 12px 0 0 12px;
+    }
+
+
   </style>
 </head>
 <body>
@@ -195,8 +205,8 @@
       </div>
       <div class="map-box" id="rightBox">
         <span class="mapName" id="rightMapName">TBD</span>
-        <img class="logo" id="rightLogo" src="static/images/TBD.png" alt="Logo">
-        <span class="score" id="rightScore"></span>
+        <!-- <img class="logo" id="rightLogo" src="static/images/TBD.png" alt="Logo">
+        <span class="score" id="rightScore"></span> -->
       </div>
     </div>
     
@@ -309,11 +319,11 @@
         }
         document.getElementById('leftLogo').src = getLogo(leftData.pickedBy, state);
         document.getElementById('middleLogo').src = getLogo(middleData.pickedBy, state);
-        document.getElementById('rightLogo').src = getLogo(rightData.pickedBy, state);
+        // document.getElementById('rightLogo').src = getLogo(rightData.pickedBy, state);
         
         document.getElementById('leftScore').innerText = (leftData.score === "TBD") ? "" : leftData.score;
         document.getElementById('middleScore').innerText = (middleData.score === "TBD") ? "" : middleData.score;
-        document.getElementById('rightScore').innerText = (rightData.score === "TBD") ? "" : rightData.score;
+        // document.getElementById('rightScore').innerText = (rightData.score === "TBD") ? "" : rightData.score;
         
         // Highlight current map box.
         document.getElementById('leftBox').classList.remove('current');
@@ -321,8 +331,14 @@
         document.getElementById('rightBox').classList.remove('current');
         if(parseInt(state.currentMapIndex) === 0) {
           document.getElementById('leftBox').classList.add('current');
+          document.getElementById('leftScore').innerText = ""
+          document.getElementById('middleMapName').innerText = "Next: " + middleData.map;
+          document.getElementById('middleScore').innerText = ""
+        document.getElementById('rightMapName').innerText = "Decider: " +  rightData.map;
         } else if(parseInt(state.currentMapIndex) === 1) {
           document.getElementById('middleBox').classList.add('current');
+          document.getElementById('middleScore').innerText = ""
+          document.getElementById('rightMapName').innerText = "Decider: " + rightData.map;
         } else if(parseInt(state.currentMapIndex) === 2) {
           document.getElementById('rightBox').classList.add('current');
         }
