@@ -1,9 +1,51 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit
+from prometheus_client import Counter, Summary, Gauge, make_wsgi_app
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
+import eventlet
+import psutil
+
+try:
+    from monotonic import monotonic
+except ImportError:
+    from time import monotonic
+
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
 socketio = SocketIO(app, async_mode='eventlet')
+
+# Prometheus Metrics
+REQUEST_COUNT = Counter('flask_request_count', 'Total Request Count', ['method', 'endpoint', 'http_status'])
+REQUEST_LATENCY = Summary('flask_request_latency_seconds', 'Request latency in seconds', ['endpoint'])
+CPU_USAGE = Gauge('cpu_usage_percent', 'CPU usage percent')
+
+@app.before_request
+def start_timer():
+    request.start_time = monotonic()
+
+@app.after_request
+def record_metrics(response):
+    latency = monotonic() - request.start_time
+    REQUEST_LATENCY.labels(request.path).observe(latency)
+    REQUEST_COUNT.labels(request.method, request.path, response.status_code).inc()
+    return response
+
+# Background task for updating CPU usage metric
+def update_cpu_usage():
+    while True:
+        CPU_USAGE.set(psutil.cpu_percent())
+        eventlet.sleep(5)
+
+# Start CPU usage monitoring in the background
+eventlet.spawn(update_cpu_usage)
+
+# Expose Prometheus metrics at the /metrics endpoint
+app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {
+    '/metrics': make_wsgi_app()
+})
+
+# --- Original App Code Below ---
 
 # Original Pick/Ban State
 state = {
@@ -23,7 +65,6 @@ boTrackingState = {
     "currentMapIndex": 1,  # For BO3, default current is Map 2 (index 1)
     "seriesScoreA": "0",
     "seriesScoreB": "0",
-    # We'll update maps from the PB state when updating tracking:
     "maps": [
         {"map": "TBD", "pickedBy": "TBD", "side": "TBD", "score": "TBD", "status": "upcoming"},
         {"map": "TBD", "pickedBy": "TBD", "side": "TBD", "score": "TBD", "status": "current"},
@@ -131,7 +172,6 @@ def handle_update_bo_tracking(data):
     boTrackingState['currentMapIndex'] = int(data.get('currentMapIndex', 1))
     boTrackingState['seriesScoreA'] = data.get('seriesScoreA', "0")
     boTrackingState['seriesScoreB'] = data.get('seriesScoreB', "0")
-    # Also copy team names from PB state
     boTrackingState['teamA'] = state['teamA']
     boTrackingState['teamB'] = state['teamB']
     boTrackingState['maps'] = [
