@@ -86,24 +86,22 @@
     }
     /* Remove bottom overlay for banned boxes (Boxes 1, 2, and 5) */
     #box1 .bottom-info,
-    #box2 .bottom-info,
-    #box5 .bottom-info {
+    #box2 .bottom-info {
       display: none;
     }
     /* Apply grayscale filter to banned boxes (Boxes 1, 2, and 5) */
     #box1 .image-container img, 
-    #box2 .image-container img, 
-    #box5 .image-container img {
+    #box2 .image-container img {
       filter: grayscale(100%);
     }
 
-    /* For banned boxes (Boxes 1, 2, and 5) */
-    #box1, #box2, #box5 {
+    /* For banned boxes (Boxes 1, 2) */
+    #box1, #box2 {
       border: 4px solid #ed2b29;
     }
 
-    /* For pick boxes (Boxes 3, 4, and 6) */
-    #box3, #box4, #box6 {
+    /* For pick boxes (Boxes 3, 4, and 6, 7) */
+    #box3, #box4, #box5, #box6, #box7 {
       border: 4px solid #205ba9;
     }
 
@@ -143,22 +141,38 @@
       </div>
       <div class="bottom-info" id="map2Bottom">TBD</div>
     </div>
-    <!-- Box 5: BAN 3 -->
+    <!-- Box 5: BAN 3
     <div class="box" id="box5">
       <div class="top-info" id="ban3Top">BAN 3<br>TBD</div>
       <div class="image-container">
         <img id="ban3Img" src="static/images/TBD.png" alt="Ban 3 Image">
       </div>
       <div class="bottom-info" id="ban3Bottom"></div>
-    </div>
-    <!-- Box 6: MAP 3 (Pick 3) -->
-    <div class="box" id="box6">
+    </div> -->
+    <!-- Box 5: MAP 3 (Pick 3) -->
+    <div class="box" id="box5">
       <div class="top-info" id="map3Top">MAP 3<br>TBD</div>
       <div class="image-container">
         <img id="map3Img" src="static/images/TBD.png" alt="Map 3 Image">
       </div>
-      <div class="bottom-info" id="map3Bottom">TBD</div>
+      <div class="bottom-info" id="map3Bottom"></div>
     </div>
+    <!-- Box 6: MAP 4 (Pick 4) -->
+    <div class="box" id="box6">
+      <div class="top-info" id="map4Top">MAP 4<br>TBD</div>
+      <div class="image-container">
+        <img id="map4Img" src="static/images/TBD.png" alt="Map 4 Image">
+      </div>
+      <div class="bottom-info" id="map4Bottom">TBD</div>
+    </div>
+    <!-- Box 7: MAP 5 (Pick 5) -->
+    <div class="box" id="box7">
+      <div class="top-info" id="map5Top">MAP 5<br>TBD</div>
+      <div class="image-container">
+        <img id="map5Img" src="static/images/TBD.png" alt="Map 5 Image">
+      </div>
+      <div class="bottom-info" id="map5Bottom">TBD</div>
+    </div>    
   </div>
   
   <script>
@@ -189,14 +203,14 @@
         document.getElementById('ban2Top').innerHTML = "BAN 2<br>TBD";
         document.getElementById('ban2Img').src = "static/images/TBD.png";
       }
-      // Box 5:
-      if (state.bans && state.bans.length > 2) {
-        document.getElementById('ban3Top').innerHTML = "BAN 3<br>" + state.bans[2].team + " : " + state.bans[2].map;
-        document.getElementById('ban3Img').src = "static/images/" + state.bans[2].map + ".png";
-      } else {
-        document.getElementById('ban3Top').innerHTML = "BAN 3<br>TBD";
-        document.getElementById('ban3Img').src = "static/images/TBD.png";
-      }
+      // // Box 5:
+      // if (state.bans && state.bans.length > 2) {
+      //   document.getElementById('ban3Top').innerHTML = "BAN 3<br>" + state.bans[2].team + " : " + state.bans[2].map;
+      //   document.getElementById('ban3Img').src = "static/images/" + state.bans[2].map + ".png";
+      // } else {
+      //   document.getElementById('ban3Top').innerHTML = "BAN 3<br>TBD";
+      //   document.getElementById('ban3Img').src = "static/images/TBD.png";
+      // }
       
       // Update pick boxes.
       // Box 3: MAP 1 → Top: "MAP 1<br>Team A : [Map]", Bottom: "Team B : [Side]"
@@ -211,11 +225,21 @@
       document.getElementById('map2Img').src = (state.map2.map !== "TBD") ?
          "static/images/" + state.map2.map + ".png" : "static/images/TBD.png";
       
-      // Box 6: MAP 3 → Top: "MAP 3<br>Team B : [Map]", Bottom: "Team A : [Side]"
+      // Box 5: MAP 3 → Top: "MAP 3<br>Team B : [Map]", Bottom: "Team A : [Side]"
       document.getElementById('map3Top').innerHTML = "MAP 3<br>" + state.map3.map_picked_by + " : " + state.map3.map;
       document.getElementById('map3Bottom').innerHTML = state.map3.side_picked_by + " : " + abbreviateSide(state.map3.side);
       document.getElementById('map3Img').src = (state.map3.map !== "TBD") ?
          "static/images/" + state.map3.map + ".png" : "static/images/TBD.png";
+      // Box 6: MAP 4 → Top: "MAP 4<br>Team B : [Map]", Bottom: "Team A : [Side]"
+      document.getElementById('map4Top').innerHTML = "MAP 4<br>" + state.map4.map_picked_by + " : " + state.map4.map;
+      document.getElementById('map4Bottom').innerHTML = state.map4.side_picked_by + " : " + abbreviateSide(state.map4.side);
+      document.getElementById('map4Img').src = (state.map4.map !== "TBD") ?
+         "static/images/" + state.map4.map + ".png" : "static/images/TBD.png";
+      // Box 7: MAP 5 → Top: "MAP 5<br>Team B : [Map]", Bottom: "Team A : [Side]"
+      document.getElementById('map5Top').innerHTML = "MAP 5<br>" + state.map5.map_picked_by + " : " + state.map5.map;
+      document.getElementById('map5Bottom').innerHTML = state.map5.side_picked_by + " : " + abbreviateSide(state.map5.side);
+      document.getElementById('map5Img').src = (state.map5.map !== "TBD") ?
+         "static/images/" + state.map5.map + ".png" : "static/images/TBD.png";
     });
   </script>
   </body>

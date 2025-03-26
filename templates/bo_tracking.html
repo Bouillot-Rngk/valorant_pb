@@ -181,16 +181,10 @@
     
     <!-- Row 2: Series Score Row -->
     <div class="series-row">
-      <div class="def-series" id="defSeries">
-        <div class="rect unscored" id="defRect1"></div>
-        <div class="rect unscored" id="defRect2"></div>
-      </div>
-      <div class="atk-series" id="atkSeries">
-        <div class="rect unscored" id="atkRect1"></div>
-        <div class="rect unscored" id="atkRect2"></div>
-      </div>
+      <div class="def-series" id="defSeries"></div>
+      <div class="atk-series" id="atkSeries"></div>
     </div>
-    
+
     <!-- Row 3: Map Tracking Row -->
     <div class="map-row">
       <div class="map-box" id="leftBox">
@@ -205,108 +199,135 @@
       </div>
       <div class="map-box" id="rightBox">
         <span class="mapName" id="rightMapName">TBD</span>
-        <!-- <img class="logo" id="rightLogo" src="static/images/TBD.png" alt="Logo">
-        <span class="score" id="rightScore"></span> -->
+        <img class="logo" id="rightLogo" src="static/images/TBD.png" alt="Logo">
+        <span class="score" id="rightScore"></span>
       </div>
     </div>
     
     <script>
       const socket = io();
-      
-      socket.on('tracking_state_updated', function(state) {
-        // --- ROW 1: Score Overlay Row ---
-        let curIndex = parseInt(state.currentMapIndex);
-        let currentMap = state.maps[curIndex] || { side: "TBD" };
-        let defTeam, atkTeam, defLogoPath, atkLogoPath, defSeriesScore, atkSeriesScore;
-        
-        // PB rules for BO3:
-        if(curIndex === 0) {
-          if(currentMap.side.toLowerCase() === "attack") {
-            defTeam = state.teamA;
-            atkTeam = state.teamB;
-            defLogoPath = "static/images/TeamALogo.png";
-            atkLogoPath = "static/images/TeamBLogo.png";
-            defSeriesScore = state.seriesScoreA;
-            atkSeriesScore = state.seriesScoreB;
-          } else if(currentMap.side.toLowerCase() === "defense") {
-            defTeam = state.teamB;
-            atkTeam = state.teamA;
-            defLogoPath = "static/images/TeamBLogo.png";
-            atkLogoPath = "static/images/TeamALogo.png";
-            defSeriesScore = state.seriesScoreB;
-            atkSeriesScore = state.seriesScoreA;
-          } else {
-            defTeam = state.teamA;
-            atkTeam = state.teamB;
-            defLogoPath = "static/images/TeamALogo.png";
-            atkLogoPath = "static/images/TeamBLogo.png";
-            defSeriesScore = state.seriesScoreA;
-            atkSeriesScore = state.seriesScoreB;
-          }
+      function getDisplayIndices(state) {
+      let boType = state.boType;
+      let n = state.maps.length;
+      let cur = parseInt(state.currentMapIndex);
+      if (boType == 3) {
+        // For BO3, always display indices [0,1,2]
+        return [0, 1, 2];
+      } else if (boType == 5) {
+        // For BO5, if current map is first (index 0) display [0,1,2]
+        // If current map is last (index 4) display [2,3,4]
+        // Otherwise display [cur-1, cur, cur+1]
+        if(cur === 0) return [0,1,2];
+        else if(cur === n-1) return [n-3, n-2, n-1];
+        else return [cur-1, cur, cur+1];
+      }
+      return [0, 1, 2];
+    }
+
+    function getTeamAssignment(boType, mapIndex, side, teamA, teamB) {
+      side = side.toLowerCase();
+      if (boType == 3) {
+        // For BO3:
+        if (mapIndex === 0) {
+          return (side === "attack") ? {def: teamA, atk: teamB} : {def: teamB, atk: teamA};
         } else {
-          if(currentMap.side.toLowerCase() === "attack") {
-            defTeam = state.teamB;
-            atkTeam = state.teamA;
-            defLogoPath = "static/images/TeamBLogo.png";
-            atkLogoPath = "static/images/TeamALogo.png";
-            defSeriesScore = state.seriesScoreB;
-            atkSeriesScore = state.seriesScoreA;
-          } else if(currentMap.side.toLowerCase() === "defense") {
-            defTeam = state.teamA;
-            atkTeam = state.teamB;
-            defLogoPath = "static/images/TeamALogo.png";
-            atkLogoPath = "static/images/TeamBLogo.png";
-            defSeriesScore = state.seriesScoreA;
-            atkSeriesScore = state.seriesScoreB;
-          } else {
-            defTeam = state.teamB;
-            atkTeam = state.teamA;
-            defLogoPath = "static/images/TeamBLogo.png";
-            atkLogoPath = "static/images/TeamALogo.png";
-            defSeriesScore = state.seriesScoreB;
-            atkSeriesScore = state.seriesScoreA;
-          }
+          return (side === "attack") ? {def: teamB, atk: teamA} : {def: teamA, atk: teamB};
         }
-        
-        document.getElementById('defName').innerText = defTeam.toUpperCase();
-        document.getElementById('atkName').innerText = atkTeam.toUpperCase();
-        document.getElementById('defLogo').src = defLogoPath;
-        document.getElementById('atkLogo').src = atkLogoPath;
-        
-        // --- ROW 2: Series Score Row ---
-        function updateScoreRectangles(container, score, isDefense) {
-          const rects = container.querySelectorAll('.rect');
-          // Remove any existing classes.
-          rects.forEach(rect => {
-            rect.classList.remove('scored', 'unscored');
-          });
-          let s = parseInt(score);
-          if(isNaN(s)) s = 0;
-          if(s === 0) {
-            rects[0].classList.add('unscored');
-            rects[1].classList.add('unscored');
-          } else if(s === 1) {
-            if(isDefense) {
-              rects[0].classList.add('scored');
-              rects[1].classList.add('unscored');
+      } else if (boType == 5) {
+        // For BO5, using the provided steps:
+        // Map1: Team A picks map, Team B picks side.
+        // Map2: Team B picks map, Team A picks side.
+        // Map3: Team A picks map, Team B picks side.
+        // Map4: Team B picks map, Team A picks side.
+        // Map5: Team B picks map, Team A picks side.
+        switch(mapIndex) {
+          case 0:
+            return (side === "attack") ? {def: teamA, atk: teamB} : {def: teamB, atk: teamA};
+          case 1:
+            return (side === "attack") ? {def: teamB, atk: teamA} : {def: teamA, atk: teamB};
+          case 2:
+            return (side === "attack") ? {def: teamA, atk: teamB} : {def: teamB, atk: teamA};
+          case 3:
+            return (side === "attack") ? {def: teamB, atk: teamA} : {def: teamA, atk: teamB};
+          case 4:
+            return (side === "attack") ? {def: teamB, atk: teamA} : {def: teamA, atk: teamB};
+          default:
+            return {def: teamA, atk: teamB};
+        }
+      }
+      return {def: teamA, atk: teamB};
+    }
+
+    socket.on('tracking_state_updated', function(state) {
+      // --- Row 1: Score Overlay Row ---
+      let curIndex = parseInt(state.currentMapIndex);
+      let currentMap = state.maps[curIndex] || { side: "TBD" };
+      let assignment;
+      if(state.boType == 3) {
+        // For BO3, use our earlier logic:
+        if(curIndex === 0) {
+          assignment = (currentMap.side.toLowerCase() === "attack") ? 
+                        {def: state.teamA, atk: state.teamB} : 
+                        {def: state.teamB, atk: state.teamA};
+        } else {
+          assignment = (currentMap.side.toLowerCase() === "attack") ? 
+                        {def: state.teamB, atk: state.teamA} : 
+                        {def: state.teamA, atk: state.teamB};
+        }
+      } else { // BO5
+        assignment = getTeamAssignment(state.boType, curIndex, currentMap.side, state.teamA, state.teamB);
+      }
+      
+      // For logos, assume if the team equals teamA then use TeamALogo.png; else TeamBLogo.png.
+      let defLogoPath = (assignment.def === state.teamA) ? "static/images/TeamALogo.png" : "static/images/TeamBLogo.png";
+      let atkLogoPath = (assignment.atk === state.teamA) ? "static/images/TeamALogo.png" : "static/images/TeamBLogo.png";
+      
+      document.getElementById('defName').innerText = assignment.def.toUpperCase();
+      document.getElementById('atkName').innerText = assignment.atk.toUpperCase();
+      document.getElementById('defLogo').src = defLogoPath;
+      document.getElementById('atkLogo').src = atkLogoPath;
+      
+      // --- Row 2: Series Score Row ---
+      let winsRequired = (state.boType == 5) ? 3 : 2;
+      console.log(winsRequired)
+      function updateScoreRectangles(container, score, isDefense) {
+        container.innerHTML = "";
+        let s = parseInt(score);
+        if(isNaN(s)) s = 0;
+        let containerWidth = container.offsetWidth;
+        let rectWidth = containerWidth / winsRequired;
+        for(let i = 0; i < winsRequired; i++){
+          let div = document.createElement("div");
+          div.classList.add('rect')
+          div.style.width = rectWidth + "px";
+          // For defense: fill from left-to-right; for attack: fill from right-to-left.
+          if(isDefense) {
+            if(i < s) {
+              div.classList.add("scored");
             } else {
-              rects[0].classList.add('unscored');
-              rects[1].classList.add('scored');
+              div.classList.add("unscored");
             }
-          } else if(s === 2) {
-            rects[0].classList.add('scored');
-            rects[1].classList.add('scored');
+          } 
+          else {
+            if((winsRequired - i) <= s) {
+              div.classList.add("scored");
+            } else {
+              div.classList.add("unscored");
+            }
           }
+          container.appendChild(div);
         }
-        const defContainer = document.getElementById('defSeries');
-        const atkContainer = document.getElementById('atkSeries');
-        updateScoreRectangles(defContainer, defSeriesScore, true);
-        updateScoreRectangles(atkContainer, atkSeriesScore, false);
-        
-        // --- ROW 3: Map Tracking Row ---
-        const leftData = state.maps[0] || { map: "TBD", pickedBy: "TBD", score: "TBD" };
-        const middleData = state.maps[1] || { map: "TBD", pickedBy: "TBD", score: "TBD" };
-        const rightData = state.maps[2] || { map: "TBD", pickedBy: "TBD", score: "TBD" };
+      }
+      const defContainer = document.getElementById('defSeries');
+      const atkContainer = document.getElementById('atkSeries');
+      updateScoreRectangles(defContainer, state.seriesScoreA, true);
+      updateScoreRectangles(atkContainer, state.seriesScoreB, false);
+      
+      // --- ROW 3: Map Tracking Row ---
+        let indices = getDisplayIndices(state);
+        const leftData = state.maps[indices[0]] || { map: "TBD", pickedBy: "TBD", score: "TBD" };
+        const middleData = state.maps[indices[1]] || { map: "TBD", pickedBy: "TBD", score: "TBD" };
+        const rightData = state.maps[indices[2]] || { map: "TBD", pickedBy: "TBD", score: "TBD" };
         
         document.getElementById('leftMapName').innerText = leftData.map;
         document.getElementById('middleMapName').innerText = middleData.map;
@@ -319,7 +340,7 @@
         }
         document.getElementById('leftLogo').src = getLogo(leftData.pickedBy, state);
         document.getElementById('middleLogo').src = getLogo(middleData.pickedBy, state);
-        // document.getElementById('rightLogo').src = getLogo(rightData.pickedBy, state);
+        document.getElementById('rightLogo').src = getLogo(rightData.pickedBy, state);
         
         document.getElementById('leftScore').innerText = (leftData.score === "TBD") ? "" : leftData.score;
         document.getElementById('middleScore').innerText = (middleData.score === "TBD") ? "" : middleData.score;
@@ -334,13 +355,29 @@
           document.getElementById('leftScore').innerText = ""
           document.getElementById('middleMapName').innerText = "Next: " + middleData.map;
           document.getElementById('middleScore').innerText = ""
-        document.getElementById('rightMapName').innerText = "Decider: " +  rightData.map;
+          document.getElementById('rightMapName').innerText = "Next: " +  rightData.map;
+          decider_image = document.getElementById('rightLogo').style.display='inherit';
         } else if(parseInt(state.currentMapIndex) === 1) {
           document.getElementById('middleBox').classList.add('current');
           document.getElementById('middleScore').innerText = ""
-          document.getElementById('rightMapName').innerText = "Decider: " + rightData.map;
+          document.getElementById('rightMapName').innerText = "Next: " + rightData.map;
+          decider_image = document.getElementById('rightLogo').style.display='inherit';
         } else if(parseInt(state.currentMapIndex) === 2) {
+          document.getElementById('middleBox').classList.add('current');
+          document.getElementById('middleScore').innerText = ""
+          document.getElementById('rightMapName').innerText = "Next: " + rightData.map;
+          decider_image = document.getElementById('rightLogo').style.display='inherit';
+        } else if(parseInt(state.currentMapIndex) === 3) {
+          document.getElementById('middleBox').classList.add('current');
+          document.getElementById('middleScore').innerText = ""
+          document.getElementById('rightMapName').innerText = "Decider: " + rightData.map;
+          decider_image = document.getElementById('rightLogo').style.display='none';
+        } else if(parseInt(state.currentMapIndex) === 4) {
           document.getElementById('rightBox').classList.add('current');
+          document.getElementById('rightMapName').innerText = rightData.map;
+          document.getElementById('rightScore').innerText = ""
+          document.getElementById('rightMapName').innerText = "Decider: " + rightData.map;
+          decider_image = document.getElementById('rightLogo').style.display='none';
         }
       });
     </script>
